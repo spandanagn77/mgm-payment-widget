@@ -1,4 +1,4 @@
-import { TextField, Autocomplete } from "@mui/material";
+import { TextField, Autocomplete, InputAdornment } from "@mui/material";
 import { Field, Form } from 'react-final-form';
 import React, { useState, useEffect, SyntheticEvent, useRef } from "react";
 import { useSearchParams } from 'react-router-dom';
@@ -36,6 +36,8 @@ const PaymentWidget = () => {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
+  const [cardType, setCardType] = useState('');
+  const [maskedNumber, setMaskedNumber] = useState('');
 
   ////***** CREDIT CARD VALIDATION */
 
@@ -56,12 +58,49 @@ const PaymentWidget = () => {
     setNameError(isNameValid ? false : true)
   };
 
+  
   const handleCardNumberChange = (event: any) => {
     const value = event.target.value;
+    const sanitizedValue = value.replace(/\s/g, ''); // Remove any whitespace
+    const cardTypeResult = number(sanitizedValue);
+    const newCardType = cardTypeResult.card ? cardTypeResult.card.type : '';
     setCardNumber(value);
+    setCardType(newCardType);
     const validation = number(value);
     setCardNumberError(validation.isValid ? false : true);
   };
+
+  const getCardIcon = () => {
+    if (cardNumber === '') {
+      return null;
+    }
+
+    const cardTypeResult = number(cardNumber);
+    if (cardTypeResult.card) {
+      const cardType = cardTypeResult.card.type;
+      const cardIcon = getCardIconForType(cardType);
+      return cardIcon;
+    }
+
+    return null;
+  };
+
+  const getCardIconForType = (cardType:string) => {
+    // Add icons for different card types as required (using Material-UI icons or custom images)
+    switch (cardType) {
+      case 'visa':
+        return <span>Visa</span>;
+      case 'mastercard':
+        return <span>Mastercard</span>;
+      case 'amex':
+        return <span>Amex</span>;
+      case 'discover':
+        return <span>Discover</span>;
+      default:
+        return null;
+    }
+  };
+
 
   const handleExpiryMonthChange = (event: any) => {
     const value = event.target.value;
@@ -254,7 +293,15 @@ const PaymentWidget = () => {
               variant="filled"
               className="bold-change"
               value={cardNumber}
-              onChange={handleCardNumberChange}              
+              onChange={handleCardNumberChange}
+              // InputProps={{
+              //   startAdornment: (
+              //     <InputAdornment position="start" style={{maxWidth: '100px' }}>
+              //       {getCardIcon()}
+              //     </InputAdornment>
+            // )}
+              // }
+                    
               InputLabelProps={{
                 style: {
                   fontWeight: 700,
@@ -267,6 +314,7 @@ const PaymentWidget = () => {
               error={cardNumberError}
             />
           </div>
+          {cardType && <p className="bold-change">CARD TYPE: {cardType.toUpperCase()}</p>}
           <div className="month-year">
             <TextField
               id="filled-basic"
@@ -317,6 +365,7 @@ const PaymentWidget = () => {
             <TextField
               id="filled-basic"
               label="CVV"
+              type='password'
               value={cvvValue}
               onChange={handleCvvChange}
               variant="filled"
