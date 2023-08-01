@@ -127,7 +127,7 @@ const PaymentWidget = () => {
     }
   };
 
-  const handleCvvChange = (event: any) => {
+  const handleCvvChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = event.target.value;
     setCvvValue(value);
     const cardType = number(cardNumber).card?.type;
