@@ -3,7 +3,7 @@ import {
 } from "@mui/material";
 import React, { useState } from "react";
 import "./PaymentWidget.css";
-import PaymentWidget from "./PaymentWidget.tsx";
+import PaymentWidget from "./PaymentWidget";
 
 const EnclosingPage = () => {
   const [firstName, setFirstName] = useState("John");
