@@ -1,6 +1,6 @@
 import { TextField, Autocomplete, InputAdornment } from "@mui/material";
 import { Field, Form, FormRenderProps } from 'react-final-form';
-import React, { useState, useEffect, SyntheticEvent, useRef } from "react";
+import React, { ChangeEvent, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from 'react-router-dom';
 import "./PaymentWidget.css";
 import {
@@ -9,20 +9,16 @@ import {
 } from './PaymentWidget.type';
 import { number, cvv, cardholderName } from 'card-validator';
 
-
 import {
-  countryValidation, addressLine1Validation,
-  addressLine2Validation, zipValidation,
-  cityValidation, stateValidation
+  addressLine1Validation,
+  addressLine2Validation,
+  cityValidation,
+  countryValidation,
+  stateValidation,
+  zipValidation
 } from './PaymentWidget.validation';
 
 
-const isValidYear = (year: string) => {
-  const currentYear = new Date().getFullYear();
-  console.log('cu', currentYear)
-  const parsedYear = parseInt(year, 10);
-  return year === '' || (year.match(/^\d{1,4}$/) && parsedYear >= currentYear && year.length <= 4);
-};
 
 const PaymentWidget = () => {
   const [name, setName] = useState("");
@@ -39,6 +35,7 @@ const PaymentWidget = () => {
   const [cardType, setCardType] = useState('');
   const [maskedNumber, setMaskedNumber] = useState('');
   const [termsField, setTermsField] = useState(true);
+  const [isCardNumberOutOfFocus, setIsCardNumberOutOfFocus] = useState(true);
 
   ////***** CREDIT CARD VALIDATION */
 
@@ -49,7 +46,38 @@ const PaymentWidget = () => {
   const [nameError, setNameError] = useState(false);
   const [cvvError, setCvvError] = useState('');
 
-  const handleNameChange = (event: any) => {
+  const validateCardNumber = useCallback(() => {
+    const validation = number(cardNumber)
+    if (cardNumber !== '') {
+      const cardError = validation.isValid ? false : true;
+      setCardNumberError(cardError)
+    };
+  }, [cardNumber])
+
+  const saveCardType = useCallback(() => {
+    const cardTypeResult = number(cardNumber);
+    const newCardType = cardTypeResult.card ? cardTypeResult.card.type : '';
+    setCardType(newCardType);
+  }, [cardNumber])
+
+  const createMaskedNumber = useCallback(() => {
+    const numbersToObscure = cardType === 'american-express' ? 11 : 12;
+    const newMaskedNumber = cardNumber
+      .split('')
+      .map((number: string, index: number) => index < numbersToObscure ? '*' : number)
+      .join('');
+    setMaskedNumber(newMaskedNumber)
+  }, [cardNumber, cardType])
+
+  // validate cardNumber and determine cardType when cardNumber changes
+  useMemo(() => {
+    validateCardNumber();
+    saveCardType()
+    createMaskedNumber()
+  }, [validateCardNumber, saveCardType, createMaskedNumber])
+
+
+  const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const inputName = event.target.value;
     setName(inputName);
 
@@ -59,16 +87,13 @@ const PaymentWidget = () => {
     setNameError(isNameValid ? false : true)
   };
 
+  const handleCardNumberChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target?.value;
+    const numbersAllowed = cardType === 'american-express' ? 15 : 16;
 
-  const handleCardNumberChange = (event: any) => {
-    const value = event.target.value;
-    const sanitizedValue = value.replace(/\s/g, ''); // Remove any whitespace
-    const cardTypeResult = number(sanitizedValue);
-    const newCardType = cardTypeResult.card ? cardTypeResult.card.type : '';
-    setCardNumber(value);
-    setCardType(newCardType);
-    const validation = number(value);
-    setCardNumberError(validation.isValid ? false : true);
+    if (value.length <= numbersAllowed) {
+      setCardNumber(value);
+    }
   };
 
   const getCardIcon = () => {
@@ -93,7 +118,7 @@ const PaymentWidget = () => {
         return <span>Visa</span>;
       case 'mastercard':
         return <span>Mastercard</span>;
-      case 'amex':
+      case 'american-express':
         return <span>Amex</span>;
       case 'discover':
         return <span>Discover</span>;
@@ -103,7 +128,7 @@ const PaymentWidget = () => {
   };
 
 
-  const handleExpiryMonthChange = (event: any) => {
+  const handleExpiryMonthChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     const month = parseInt(value);
     if (value === '' || (month >= 1 && month <= 12)) {
@@ -115,7 +140,7 @@ const PaymentWidget = () => {
     }
   };
 
-  const handleExpiryYearChange = (event: any) => {
+  const handleExpiryYearChange = (event: ChangeEvent<HTMLInputElement>) => {
     const inputYear = event.target.value;
     const currentYear = new Date().getFullYear();
     setExpiryYear(inputYear);
@@ -128,7 +153,7 @@ const PaymentWidget = () => {
     }
   };
 
-  const handleCvvChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleCvvChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setCvvValue(value);
     const cardType = number(cardNumber).card?.type;
@@ -184,7 +209,14 @@ const PaymentWidget = () => {
     const addressError =
       Object.keys(errorsResult).length
 
-    if (addressError > 0) {
+    console.log('cardNumberError ==>', cardNumberError, 'expiryYearError ==>', (expiryYearError != ''), 'expiryMonthError ==>', (expiryMonthError != ''),
+      'nameError ==>', nameError, 'cvvError ==>', (cvvError != ''))
+
+    const cardError = cardNumberError || (expiryYearError != '') || (expiryMonthError != '') || nameError || (cvvError != '')
+
+    console.log('cardError ==>', cardError, ' errorsResult ==>', errorsResult)
+
+    if ((addressError > 0) || cardError) {
       setTermsField(true)
     }
     else {
@@ -305,16 +337,10 @@ const PaymentWidget = () => {
                     label="Card Number"
                     variant="filled"
                     className="bold-change"
-                    value={cardNumber}
+                    value={isCardNumberOutOfFocus ? maskedNumber : cardNumber}
                     onChange={handleCardNumberChange}
-                    // InputProps={{
-                    //   startAdornment: (
-                    //     <InputAdornment position="start" style={{maxWidth: '100px' }}>
-                    //       {getCardIcon()}
-                    //     </InputAdornment>
-                    // )}
-                    // }
-
+                    onBlur={() => setIsCardNumberOutOfFocus(true)}
+                    onFocus={() => setIsCardNumberOutOfFocus(false)}
                     InputLabelProps={{
                       style: {
                         fontWeight: 700,
@@ -741,3 +767,4 @@ const PaymentWidget = () => {
 };
 
 export default PaymentWidget;
+
