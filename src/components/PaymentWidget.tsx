@@ -1,13 +1,13 @@
 import { TextField, Autocomplete, InputAdornment } from "@mui/material";
-import { Field, Form } from 'react-final-form';
+import { Field, Form, FormRenderProps } from 'react-final-form';
 import React, { useState, useEffect, SyntheticEvent, useRef } from "react";
 import { useSearchParams } from 'react-router-dom';
 import "./PaymentWidget.css";
 import {
   PaymentWidgetInterface, PaymentWidgetFormFields, countries,
-  Option, ValidationErrors
+  Option, ValidationErrors, getStateByCountry
 } from './PaymentWidget.type';
-import {number, cvv, cardholderName  } from 'card-validator';
+import { number, cvv, cardholderName } from 'card-validator';
 
 
 import {
@@ -38,12 +38,13 @@ const PaymentWidget = () => {
   const [zip, setZip] = useState("");
   const [cardType, setCardType] = useState('');
   const [maskedNumber, setMaskedNumber] = useState('');
+  const [termsField, setTermsField] = useState(true);
 
   ////***** CREDIT CARD VALIDATION */
 
   const [cardNumberError, setCardNumberError] = useState(false);
-  const [expiryYearError, setExpiryYearError] = useState('');  
-  const [expiryMonthError, setExpiryMonthError] = useState('');  
+  const [expiryYearError, setExpiryYearError] = useState('');
+  const [expiryMonthError, setExpiryMonthError] = useState('');
   const [isNameValid, setIsNameValid] = useState(true);
   const [nameError, setNameError] = useState(false);
   const [cvvError, setCvvError] = useState('');
@@ -58,7 +59,7 @@ const PaymentWidget = () => {
     setNameError(isNameValid ? false : true)
   };
 
-  
+
   const handleCardNumberChange = (event: any) => {
     const value = event.target.value;
     const sanitizedValue = value.replace(/\s/g, ''); // Remove any whitespace
@@ -85,7 +86,7 @@ const PaymentWidget = () => {
     return null;
   };
 
-  const getCardIconForType = (cardType:string) => {
+  const getCardIconForType = (cardType: string) => {
     // Add icons for different card types as required (using Material-UI icons or custom images)
     switch (cardType) {
       case 'visa':
@@ -113,7 +114,7 @@ const PaymentWidget = () => {
       setExpiryMonthError('Invalid month');
     }
   };
-  
+
   const handleExpiryYearChange = (event: any) => {
     const inputYear = event.target.value;
     const currentYear = new Date().getFullYear();
@@ -139,7 +140,7 @@ const PaymentWidget = () => {
       setCvvError(validation.isValid ? '' : 'Invalid CVV (must be 3 digits)');
     }
   };
-  
+
 
   ////// */
 
@@ -148,15 +149,8 @@ const PaymentWidget = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  //console.log('useEffect searchParams ==>', searchParams)
-
-  /* useEffect(() => {
-    console.log('useEffect onload params ==>', searchParams)
-    postMessageToParent()
-  }, [])*/
-
   useEffect(() => {
-    //console.log('useEffect searchParams ==>', searchParams)
+
     if (window && window.parent) {
       //console.log('window.parent ==>', window.parent)
       const dimesions = JSON.stringify({
@@ -186,6 +180,18 @@ const PaymentWidget = () => {
     console.log('eveent ==>', ev)
   }
 
+  const updateTermsAndCondition = (errorsResult: ValidationErrors) => {
+    const addressError =
+      Object.keys(errorsResult).length
+
+    if (addressError > 0) {
+      setTermsField(true)
+    }
+    else {
+      setTermsField(false)
+    }
+  }
+
   const onValidate = (values: PaymentWidgetInterface): ValidationErrors => {
 
 
@@ -199,7 +205,7 @@ const PaymentWidget = () => {
 
     const billingZipCodeError = zipValidation(values.billingZipCode, values.billingCountry)
 
-    const billingStateError = stateValidation(values.billingState)
+    const billingStateError = stateValidation(values.billingState, values.billingCountry)
 
     const billingCityError = cityValidation(values.billingCity)
 
@@ -214,9 +220,16 @@ const PaymentWidget = () => {
       ...(billingCityError && { billingCity: billingCityError }),
     }
 
-    console.log('errorsResult ==>', errorsResult)
+
+    //console.log('errorsResult ==>', errorsResult)
+
+    updateTermsAndCondition(errorsResult)
 
     return errorsResult
+  }
+
+  const getDisplayText = (props: FormRenderProps<PaymentWidgetInterface, Partial<PaymentWidgetInterface>>) => {
+    return (props.values.billingCountry === 'US' || props.values.billingCountry === 'CA') ? helperText : ''
   }
 
   return (
@@ -231,7 +244,7 @@ const PaymentWidget = () => {
             ...PaymentWidgetFormFields
           }}
         >
-          {() => {
+          {props => {
             return (
               <form id="">
                 <div className="bold-change info-header mbot">
@@ -268,123 +281,186 @@ const PaymentWidget = () => {
                   />
                 </div>
                 <div className="mbot">
-            <TextField
-              id="filled-basic"
-              label="Cardholder Name"
-              variant="filled"
-              className="bold-change"
-              value={name}
-              onChange={handleNameChange}              
-              InputLabelProps={{
-                style: {
-                  fontWeight: 700,
-                  fontSize: "13px",
-                  marginTop: "4px",
-                },
-              }}
-              inputProps={{ style: { fontWeight: "bold", width: "640px" } }}
-              helperText={nameError ? "Invalid Name" : "*Required"}    
-              error={nameError}        />
-          </div>
-          <div className="mbot">
-            <TextField
-              id="filled-basic"
-              label="Card Number"
-              variant="filled"
-              className="bold-change"
-              value={cardNumber}
-              onChange={handleCardNumberChange}
-              // InputProps={{
-              //   startAdornment: (
-              //     <InputAdornment position="start" style={{maxWidth: '100px' }}>
-              //       {getCardIcon()}
-              //     </InputAdornment>
-            // )}
-              // }
-                    
-              InputLabelProps={{
-                style: {
-                  fontWeight: 700,
-                  fontSize: "13px",
-                  marginTop: "4px",
-                },
-              }}
-              inputProps={{ style: { fontWeight: "bold", width: "640px" } }}
-              helperText={cardNumberError ? "Invalid Card Number" : "*Required"}
-              error={cardNumberError}
-            />
-          </div>
-          {cardType && <p className="bold-change">CARD TYPE: {cardType.toUpperCase()}</p>}
-          <div className="month-year">
-            <TextField
-              id="filled-basic"
-              label="Month"
-              value={expiryMonth}
-              onChange={handleExpiryMonthChange}              
-              variant="filled"
-              className="bold-change"
-              InputLabelProps={{
-                style: {
-                  fontWeight: 700,
-                  fontSize: "13px",
-                  marginTop: "4px",
-                },
-              }}
-              inputProps={{
-                style: { fontWeight: "bold", width: "320px" },
-              }}
-              error={Boolean(expiryMonthError)}
-              helperText={expiryMonthError}
+                  <TextField
+                    id="filled-basic"
+                    label="Cardholder Name"
+                    variant="filled"
+                    className="bold-change"
+                    value={name}
+                    onChange={handleNameChange}
+                    InputLabelProps={{
+                      style: {
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        marginTop: "4px",
+                      },
+                    }}
+                    inputProps={{ style: { fontWeight: "bold", width: "640px" } }}
+                    helperText={nameError ? "Invalid Name" : "*Required"}
+                    error={nameError} />
+                </div>
+                <div className="mbot">
+                  <TextField
+                    id="filled-basic"
+                    label="Card Number"
+                    variant="filled"
+                    className="bold-change"
+                    value={cardNumber}
+                    onChange={handleCardNumberChange}
+                    // InputProps={{
+                    //   startAdornment: (
+                    //     <InputAdornment position="start" style={{maxWidth: '100px' }}>
+                    //       {getCardIcon()}
+                    //     </InputAdornment>
+                    // )}
+                    // }
 
-            />
+                    InputLabelProps={{
+                      style: {
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        marginTop: "4px",
+                      },
+                    }}
+                    inputProps={{ style: { fontWeight: "bold", width: "640px" } }}
+                    helperText={cardNumberError ? "Invalid Card Number" : "*Required"}
+                    error={cardNumberError}
+                  />
+                </div>
+                {cardType && <p className="bold-change">CARD TYPE: {cardType.toUpperCase()}</p>}
+                <div className="month-year">
+                  <TextField
+                    id="filled-basic"
+                    label="Month"
+                    value={expiryMonth}
+                    onChange={handleExpiryMonthChange}
+                    variant="filled"
+                    className="bold-change"
+                    InputLabelProps={{
+                      style: {
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        marginTop: "4px",
+                      },
+                    }}
+                    inputProps={{
+                      style: { fontWeight: "bold", width: "320px" },
+                    }}
+                    error={Boolean(expiryMonthError)}
+                    helperText={expiryMonthError}
 
-            <div className="mbot">
-              <TextField
-                id="filled-basic"
-                label="Year"
-                variant="filled"
-                className="bold-change"
-                value={expiryYear}                
-                onChange={handleExpiryYearChange}                
-                InputLabelProps={{
-                  style: {
-                    fontWeight: 700,
-                    fontSize: "13px",
-                    marginTop: "4px",
-                  },
-                }}
-                inputProps={{
-                  style: { fontWeight: "bold", width: "280px" },
-                }}
-                error={Boolean(expiryYearError)}
-              helperText={expiryYearError}
-              />
-            </div>
-          </div>
-          <div className="mbot">
-            <TextField
-              id="filled-basic"
-              label="CVV"
-              type='password'
-              value={cvvValue}
-              onChange={handleCvvChange}
-              variant="filled"
-              className="bold-change"
-              InputLabelProps={{
-                style: {
-                  fontWeight: 700,
-                  fontSize: "13px",
-                  marginTop: "4px",
-                },
-              }}
-              inputProps={{
-                style: { fontWeight: "bold", width: "640px" },
-              }}
-              error={Boolean(cvvError)}
-              helperText={cvvError}
-            />
-          </div>
+                  />
+
+                  <div className="mbot">
+                    <TextField
+                      id="filled-basic"
+                      label="Year"
+                      variant="filled"
+                      className="bold-change"
+                      value={expiryYear}
+                      onChange={handleExpiryYearChange}
+                      InputLabelProps={{
+                        style: {
+                          fontWeight: 700,
+                          fontSize: "13px",
+                          marginTop: "4px",
+                        },
+                      }}
+                      inputProps={{
+                        style: { fontWeight: "bold", width: "280px" },
+                      }}
+                      error={Boolean(expiryYearError)}
+                      helperText={expiryYearError}
+                    />
+                  </div>
+                </div>
+                <div className="mbot">
+                  <TextField
+                    id="filled-basic"
+                    label="CVV"
+                    type='password'
+                    value={cvvValue}
+                    onChange={handleCvvChange}
+                    variant="filled"
+                    className="bold-change"
+                    InputLabelProps={{
+                      style: {
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        marginTop: "4px",
+                      },
+                    }}
+                    inputProps={{
+                      style: { fontWeight: "bold", width: "640px" },
+                    }}
+                    error={Boolean(cvvError)}
+                    helperText={cvvError}
+                  />
+                </div>
                 <div className="mbot info-header">Billing Address</div>
+                <div className="mbot">
+                  <Field name="billingCountry">
+                    {({ input, meta }) => {
+                      const { error, touched, submitError } = meta;
+                      const isError = (error && touched) ? true : false
+                      //console.log('billingCountry isError ==>', isError)
+                      return (<Autocomplete
+                        id="ddlCountry"
+                        options={countries}
+                        disableClearable
+                        freeSolo
+                        selectOnFocus
+                        clearOnBlur
+                        // value={country}
+                        onChange={(event, newValue) => {
+                          //console.log('On country change', newValue)
+                          let option1 = (newValue as Option);
+
+                          /* if (txtState.current) {
+                             console.log('txtState ==>', txtState.current)
+                             //txtState.current.nodeValue = '';
+                           }*/
+                          //console.log('state Before ==>', state)
+
+                          if (option1) {
+                            setCountry(option1.value)
+                            setState('')
+
+                            //props.values.billingState = '';
+
+                            // console.log('after Before ==>', state)
+                            if (input.onChange) {
+                              input.onChange(option1.value);
+                            }
+                          }
+                        }}
+                        renderInput={(params) =>
+                          <div ref={params.InputProps.ref}>
+                            <TextField {...params} label="Country"
+                              helperText={isError ? error : helperText}
+                              error={isError}
+                              type="text"
+                              InputProps={{
+                                style: { fontWeight: "bold", width: "660px" },
+                                ...params.InputProps,
+                                ...input
+                              }}
+                              InputLabelProps={{
+                                style: {
+                                  fontWeight: 700,
+                                  fontSize: "13px",
+                                  marginTop: "4px",
+                                },
+                              }}
+                              className="bold-change"
+                              variant="filled"
+                            />
+                          </div>}
+                      />)
+                    }
+                    }
+                  </Field>
+                </div>
                 <div className="mbot">
                   <Field name="billingAddressLine1">
                     {({ input, meta }) => {
@@ -450,83 +526,7 @@ const PaymentWidget = () => {
                     }
                   </Field>
                 </div>
-                <div className="mbot">
-                  <Field name="billingCountry">
-                    {({ input, meta }) => {
-                      const { error, touched, submitError } = meta;
-                      const isError = (error && touched) ? true : false
-                      //console.log('billingCountry isError ==>', isError)
-                      return (<Autocomplete
-                        id="filled-basic"
-                        options={countries}
-                        disableClearable
-                        freeSolo
-                        selectOnFocus
-                        clearOnBlur
-                        // value={country}
-                        onChange={(event, newValue) => {
-                          //console.log('On country change', newValue)
-                          let option1 = (newValue as Option);
-                          if (option1) {
-                            setCountry(option1.label)
-                            if (input.onChange) {
-                              input.onChange(option1.value);
-                            }
-                          }
-                        }}
-                        renderInput={(params) =>
-                          <div ref={params.InputProps.ref}>
-                            <TextField {...params} label="Country"
-                              helperText={isError ? error : helperText}
-                              error={isError}
-                              type="text"
-                              InputProps={{
-                                style: { fontWeight: "bold", width: "660px" },
-                                ...params.InputProps,
-                                ...input
-                              }}
-                              className="bold-change"
-                              variant="filled"
-                            />
-                          </div>}
-                      />)
-                    }
-                    }
-                  </Field>
-                </div>
 
-                <div className="mbot">
-                  <Field name="billingState">
-                    {({ input, meta }) => {
-                      const { error, submitError, touched } = meta;
-                      const isError = (error && touched) ? true : false
-                      //console.log('billingAddressLine2 isError ==>', isError)
-                      return (
-                        <TextField
-                          id="filled-basic"
-                          label="State/Province"
-                          variant="filled"
-                          className="bold-change"
-                          value={state}
-                          onChange={(e) => setState(e.target.value)}
-                          InputLabelProps={{
-                            style: {
-                              fontWeight: 700,
-                              fontSize: "13px",
-                              marginTop: "4px",
-                            },
-                          }}
-                          inputProps={{
-                            style: { fontWeight: "bold", width: "640px" },
-                            ...input
-                          }}
-                          helperText={isError ? error : helperText}
-                          error={isError}
-                        />)
-                    }
-                    }
-                  </Field>
-                </div>
                 <div className="mbot">
                   <Field name="billingCity">
                     {({ input, meta }) => {
@@ -560,11 +560,68 @@ const PaymentWidget = () => {
                   </Field>
                 </div>
                 <div className="mbot">
+                  <Field name="billingState">
+                    {({ input, meta }) => {
+                      const { error, touched, submitError, modified } = meta;
+                      const isError = (error && (touched)) ? true : false
+                      //console.log('billingState  ==>', props.values.billingState, 'state ==>', state)
+                      const displayText = isError ? error : getDisplayText(props)
+                      return (<Autocomplete
+                        id="ddlState"
+                        options={getStateByCountry(props.values.billingCountry)}
+                        disableClearable
+                        freeSolo
+                        selectOnFocus
+                        //clearOnBlur
+                        // value={country}
+                        style={{ marginBottom: "20px" }}
+                        onChange={(event, newValue) => {
+                          //console.log('On country change', newValue)
+                          let option1 = (newValue as Option);
+                          //console.log('OutSide State')
+                          if (option1) {
+                            //console.log('Inside State')
+                            setState(option1.label)
+                            if (input.onChange) {
+                              input.onChange(option1.label);
+                            }
+                          }
+                        }}
+                        renderInput={(params) =>
+                          <div ref={params.InputProps.ref}>
+                            <TextField {...params} label="State/Province"
+                              helperText={displayText}
+                              error={isError}
+                              type="text"
+                              InputProps={{
+                                style: { fontWeight: "bold", width: "660px" },
+                                ...params.InputProps,
+                                ...input
+                              }}
+                              InputLabelProps={{
+                                style: {
+                                  fontWeight: 700,
+                                  fontSize: "13px",
+                                  marginTop: "4px",
+                                },
+                              }}
+                              className="bold-change"
+                              variant="filled"
+
+                            />
+                          </div>}
+                      />)
+                    }
+                    }
+                  </Field>
+                </div>
+                <div className="mbot">
                   <Field name="billingZipCode">
                     {({ input, meta }) => {
                       const { error, submitError, touched } = meta;
                       const isError = (error && touched) ? true : false
                       //console.log('zipCode isError ==>', isError, ' country==>', country)
+                      const displayText = isError ? error : getDisplayText(props)
                       return (
                         <TextField
                           id="filled-basic"
@@ -584,7 +641,7 @@ const PaymentWidget = () => {
                             style: { fontWeight: "bold", width: "640px" },
                             ...input
                           }}
-                          helperText={isError ? error : helperText}
+                          helperText={displayText}
                           error={isError}
                         />)
                     }
@@ -601,6 +658,7 @@ const PaymentWidget = () => {
             <span className="">
               <input
                 type="checkbox"
+                disabled={termsField}
                 className=""
                 data-testid="termsAndConditions-internal-checkbox"
                 aria-labelledby="terms-and-conditions"

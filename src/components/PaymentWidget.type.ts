@@ -1,4 +1,4 @@
-import { allCountries, CountryData } from 'country-region-data';
+import { allCountries, CountryData, Region } from 'country-region-data';
 import { FORM_ERROR } from 'final-form';
 
 
@@ -22,6 +22,11 @@ export class PaymentWidgetFormFields implements PaymentWidgetInterface {
     billingState = "";
 }
 
+export interface Option {
+    value: string;
+    label: string;
+}
+
 const parseCountryToOptions = (items: CountryData[]): Option[] => {
 
     let data = items.map(item => {
@@ -31,10 +36,24 @@ const parseCountryToOptions = (items: CountryData[]): Option[] => {
     return data;
 }
 
-export interface Option {
-    value: string;
-    label: string;
+const filterStateByCountry = (countryCode: string, countries: CountryData[]): Option[] => {
+    //console.log('filterStateByCountry countryCode ==>', countryCode)
+    const stateData = countries.find(item => (item[1] === countryCode))
+
+
+    //console.log('filterStateByCountry ==>', stateData, ' stateData[0] ==>', stateData?.[2])
+
+    let data: Option[] = [];
+
+    if (stateData) {
+        data = stateData[2].map((item: Region) => {
+            return (<Option>({ label: item[0], value: item[1] }));
+        });
+    }
+
+    return data;
 }
+
 
 export interface FormError {
     guest?: string;
@@ -60,7 +79,5 @@ export interface ValidationErrors {
 
 
 export const countries: Option[] = parseCountryToOptions(allCountries);
-/*export const countries = () => {
-    console.log('Countrites ==>', parseCountryToOptions(allCountries))
-}*/
-//export const countries: Option[] = parseCountryToOptions(allCountries);
+
+export const getStateByCountry = (countryCode: string) => filterStateByCountry(countryCode, allCountries);

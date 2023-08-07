@@ -1,3 +1,7 @@
+import {
+    getStateByCountry
+} from './PaymentWidget.type'
+
 // eslint-disable-next-line no-useless-escape
 const STRING_PATTERN = /^[ A-Za-z0-9.\-\/+=_ !$\*?@#,']*$/;
 // eslint-disable-next-line no-useless-escape
@@ -6,9 +10,7 @@ const EMAIL_REGEX =
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 // eslint-disable-next-line no-useless-escape
 const ALPHANUMERIC_PATTERN = /^([a-zA-Z0-9]+)$/
-const ALPHABET_PATTERN = /^([a-zA-Z]+)$/
-const ADDRESS_PATTERN = /^([a-zA-Z\u0080-\u024F]+(?:. |-| |'))*[a-zA-Z\u0080-\u024F]*$/;
-
+const CITY_PATTERN = /^([a-zA-Z\s-]+)$/
 
 type Constraint = 'length' | 'format' | 'email' | 'inclusion' | 'required';
 interface Options {
@@ -111,19 +113,15 @@ function _validate(
 export const countryValidation = (value: string) => {
     //console.log('countryValidation billingCountry ==>', value)
     return _validate(value, [
-        ['required', { message: 'Country Name is required' }],
-        ['length', { max: 20, message: 'Country Name should be less then 10' }],
+        ['required', { message: 'Please select your country' }],
+        //['length', { max: 20, message: 'Country Name should be less then 10' }],
     ]);
 }
 
 export const addressLine1Validation = (value: string) => {
     //console.log('addressLine1Validation value ==>', value)
     return _validate(value, [
-        ['required', { message: 'Address Line1 is required' }],
-        [
-            'format',
-            { pattern: STRING_PATTERN, message: 'Address Line1 only allows alphanumberic characters' },
-        ],
+        ['required', { message: 'Address line 1 is required' }],
         ['length', { max: 70, message: 'Address Line1 should be less then 70' }],
     ]);
 }
@@ -131,10 +129,6 @@ export const addressLine1Validation = (value: string) => {
 
 export const addressLine2Validation = (value: string) => {
     return _validate(value, [
-        [
-            'format',
-            { pattern: STRING_PATTERN, message: 'Address Line2 only allows alphanumberic characters' },
-        ],
         ['length', { max: 70, message: 'Address Line2 should be less then 70' }],
     ]);
 }
@@ -162,14 +156,14 @@ export const zipValidation = (value: string, billingCountry: string) => {
     if (billingCountry === 'US' || billingCountry === 'CA') {
         zipConstraints.push([
             'required',
-            { message: 'Zip value is required' },
+            { message: 'Please enter zip/postal code' },
         ]);
     }
     zipConstraints.push([
         'format',
         {
             pattern: zipPatternByCountry(billingCountry),
-            message: 'Zip format is incorrect',
+            message: 'The given zip code has an invalid format',
         },
     ]);
 
@@ -177,16 +171,24 @@ export const zipValidation = (value: string, billingCountry: string) => {
 }
 
 
-export const stateValidation = (value: string) => {
+export const stateValidation = (value: string, billingCountry: string) => {
     //console.log('addressLine1Validation value ==>', value)
-    return _validate(value, [
-        ['required', { message: 'State is required' }],
-        [
-            'format',
-            { pattern: ADDRESS_PATTERN, message: 'State only allows alphabet characters' },
-        ],
-        ['length', { max: 70, message: 'State should be less then 70' }],
-    ]);
+    const stateConstraints: Array<[Constraint, ConstraintOptions]> = [];
+
+    const stateNames = getStateByCountry(billingCountry).map(item => item.label);
+
+    if (billingCountry === 'US' || billingCountry === 'CA') {
+        stateConstraints.push([
+            'inclusion',
+            {
+                within: stateNames,
+                message: 'Selected value is not valid state/province',
+            },
+        ]);
+        stateConstraints.push(['required', { message: 'Please enter a state or province' }]);
+    }
+
+    return _validate(value, stateConstraints);
 }
 
 export const cityValidation = (value: string) => {
@@ -195,7 +197,7 @@ export const cityValidation = (value: string) => {
         ['required', { message: 'City is required' }],
         [
             'format',
-            { pattern: ADDRESS_PATTERN, message: 'City only allows alphabet characters' },
+            { pattern: CITY_PATTERN, message: 'The given City has an invalid format' },
         ],
         ['length', { max: 70, message: 'City should be less then 70' }],
     ]);
