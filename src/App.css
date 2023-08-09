@@ -4,70 +4,88 @@
     margin-left: 10px;
   }*/
 
-  .pageContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .month-year {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-  }
-  
-  .bold-change {
-    font-weight: bold;
-  }
-  
-  .mbot {
-    margin-bottom: 12px !important;
-  }
-  
-  .box {
-    display: flex;
-    justify-content: center;
-  }
-  
-  .end-width {
-    width: 660px;
-  }
-  
-  .div-splitter {
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  .terms {
-    padding: 7px;
-  }
-  
-  button {
-    background-color: #4957f4;
-    height: 50px;
-    font-size: 17px;
-    order: 1px solid #4957f4;
-    background-image: linear-gradient(to top, #4957f4, #6b55f5);
-    width: 100%;
-    border-radius: 60px;
-    color: white;
-  }
-  
-  .info-header {
-    font-size: 25px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    font-weight: bold;
-  }
-  
-  .divider {
-    height: 1px;
-    margin: 1rem 0;
-    background-color: #dfdfdf;
-  }
-  
-  .timer {
-    justify-content: center;
-    margin-bottom: 10px;
-  }
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.month-year {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.bold-change {
+  font-weight: bold;
+}
+
+.mbot {
+  margin-bottom: 12px !important;
+}
+
+.box {
+  display: flex;
+  justify-content: center;
+}
+
+.end-width {
+  width: 660px;
+}
+
+.div-splitter {
+  display: flex;
+  justify-content: space-between;
+}
+
+.terms {
+  padding: 7px;
+}
+
+button {
+  background-color: #4957f4;
+  height: 50px;
+  font-size: 17px;
+  order: 1px solid #4957f4;
+  background-image: linear-gradient(to top, #4957f4, #6b55f5);
+  width: 100%;
+  border-radius: 60px;
+  color: white;
+}
+
+.info-header {
+  font-size: 25px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.divider {
+  height: 1px;
+  margin: 1rem 0;
+  background-color: #dfdfdf;
+}
+
+.timer {
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-button {
+  height: 64px;
+  padding: 15px 30px;
+  font-weight: bold;
+  border: none;
+  width: 60%;
+  position: fixed;
+  bottom: 20px;
+  cursor: pointer;
+  z-index: 1;
+}
