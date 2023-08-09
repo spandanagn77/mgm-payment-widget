@@ -1,13 +1,25 @@
 import { TextField, Autocomplete, InputAdornment } from "@mui/material";
-import { Field, Form, FormRenderProps } from 'react-final-form';
-import React, { ChangeEvent, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from 'react-router-dom';
+import { Field, Form, FormRenderProps } from "react-final-form";
+import React, {
+  ChangeEvent,
+  SyntheticEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useSearchParams } from "react-router-dom";
 import "./PaymentWidget.css";
 import {
-  PaymentWidgetInterface, PaymentWidgetFormFields, countries,
-  Option, ValidationErrors, getStateByCountry
-} from './PaymentWidget.type';
-import { number, cvv, cardholderName } from 'card-validator';
+  PaymentWidgetInterface,
+  PaymentWidgetFormFields,
+  countries,
+  Option,
+  ValidationErrors,
+  getStateByCountry,
+} from "./PaymentWidget.type";
+import { number, cvv, cardholderName } from "card-validator";
 
 import {
   addressLine1Validation,
@@ -15,15 +27,13 @@ import {
   cityValidation,
   countryValidation,
   stateValidation,
-  zipValidation
-} from './PaymentWidget.validation';
-
-
+  zipValidation,
+} from "./PaymentWidget.validation";
 
 const PaymentWidget = () => {
   const [name, setName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
-  const [expiryMonth, setExpiryMonth] = useState('');
+  const [expiryMonth, setExpiryMonth] = useState("");
   const [expiryYear, setExpiryYear] = useState("");
   const [cvvValue, setCvvValue] = useState("");
   const [country, setCountry] = useState("");
@@ -32,50 +42,51 @@ const PaymentWidget = () => {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
-  const [cardType, setCardType] = useState('');
-  const [maskedNumber, setMaskedNumber] = useState('');
+  const [cardType, setCardType] = useState("");
+  const [maskedNumber, setMaskedNumber] = useState("");
   const [termsField, setTermsField] = useState(true);
   const [isCardNumberOutOfFocus, setIsCardNumberOutOfFocus] = useState(true);
 
   ////***** CREDIT CARD VALIDATION */
 
   const [cardNumberError, setCardNumberError] = useState(false);
-  const [expiryYearError, setExpiryYearError] = useState('');
-  const [expiryMonthError, setExpiryMonthError] = useState('');
+  const [expiryYearError, setExpiryYearError] = useState("");
+  const [expiryMonthError, setExpiryMonthError] = useState("");
   const [isNameValid, setIsNameValid] = useState(true);
   const [nameError, setNameError] = useState(false);
-  const [cvvError, setCvvError] = useState('');
+  const [cvvError, setCvvError] = useState("");
 
   const validateCardNumber = useCallback(() => {
-    const validation = number(cardNumber)
-    if (cardNumber !== '') {
+    const validation = number(cardNumber);
+    if (cardNumber !== "") {
       const cardError = validation.isValid ? false : true;
-      setCardNumberError(cardError)
-    };
-  }, [cardNumber])
+      setCardNumberError(cardError);
+    }
+  }, [cardNumber]);
 
   const saveCardType = useCallback(() => {
     const cardTypeResult = number(cardNumber);
-    const newCardType = cardTypeResult.card ? cardTypeResult.card.type : '';
+    const newCardType = cardTypeResult.card ? cardTypeResult.card.type : "";
     setCardType(newCardType);
-  }, [cardNumber])
+  }, [cardNumber]);
 
   const createMaskedNumber = useCallback(() => {
-    const numbersToObscure = cardType === 'american-express' ? 11 : 12;
+    const numbersToObscure = cardType === "american-express" ? 11 : 12;
     const newMaskedNumber = cardNumber
-      .split('')
-      .map((number: string, index: number) => index < numbersToObscure ? '*' : number)
-      .join('');
-    setMaskedNumber(newMaskedNumber)
-  }, [cardNumber, cardType])
+      .split("")
+      .map((number: string, index: number) =>
+        index < numbersToObscure ? "*" : number
+      )
+      .join("");
+    setMaskedNumber(newMaskedNumber);
+  }, [cardNumber, cardType]);
 
   // validate cardNumber and determine cardType when cardNumber changes
   useMemo(() => {
     validateCardNumber();
-    saveCardType()
-    createMaskedNumber()
-  }, [validateCardNumber, saveCardType, createMaskedNumber])
-
+    saveCardType();
+    createMaskedNumber();
+  }, [validateCardNumber, saveCardType, createMaskedNumber]);
 
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const inputName = event.target.value;
@@ -84,12 +95,12 @@ const PaymentWidget = () => {
     // Validate the name using card-validator
     const isValid = cardholderName(inputName).isValid;
     setIsNameValid(isValid);
-    setNameError(isNameValid ? false : true)
+    setNameError(isNameValid ? false : true);
   };
 
   const handleCardNumberChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target?.value;
-    const numbersAllowed = cardType === 'american-express' ? 15 : 16;
+    const numbersAllowed = cardType === "american-express" ? 15 : 16;
 
     if (value.length <= numbersAllowed) {
       setCardNumber(value);
@@ -97,7 +108,7 @@ const PaymentWidget = () => {
   };
 
   const getCardIcon = () => {
-    if (cardNumber === '') {
+    if (cardNumber === "") {
       return null;
     }
 
@@ -114,29 +125,28 @@ const PaymentWidget = () => {
   const getCardIconForType = (cardType: string) => {
     // Add icons for different card types as required (using Material-UI icons or custom images)
     switch (cardType) {
-      case 'visa':
+      case "visa":
         return <span>Visa</span>;
-      case 'mastercard':
+      case "mastercard":
         return <span>Mastercard</span>;
-      case 'american-express':
+      case "american-express":
         return <span>Amex</span>;
-      case 'discover':
+      case "discover":
         return <span>Discover</span>;
       default:
         return null;
     }
   };
 
-
   const handleExpiryMonthChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     const month = parseInt(value);
-    if (value === '' || (month >= 1 && month <= 12)) {
+    if (value === "" || (month >= 1 && month <= 12)) {
       setExpiryMonth(value);
-      setExpiryMonthError('');
+      setExpiryMonthError("");
     } else {
-      setExpiryMonth('');
-      setExpiryMonthError('Invalid month');
+      setExpiryMonth("");
+      setExpiryMonthError("Invalid month");
     }
   };
 
@@ -145,11 +155,15 @@ const PaymentWidget = () => {
     const currentYear = new Date().getFullYear();
     setExpiryYear(inputYear);
 
-    if (/^\d{4}$/.test(inputYear) && (parseInt(inputYear) >= currentYear && parseInt(inputYear) < currentYear + 20)) {
+    if (
+      /^\d{4}$/.test(inputYear) &&
+      parseInt(inputYear) >= currentYear &&
+      parseInt(inputYear) < currentYear + 20
+    ) {
       setExpiryYear(inputYear);
-      setExpiryYearError('');
+      setExpiryYearError("");
     } else {
-      setExpiryYearError('Invalid Year');
+      setExpiryYearError("Invalid Year");
     }
   };
 
@@ -157,115 +171,151 @@ const PaymentWidget = () => {
     const value = event.target.value;
     setCvvValue(value);
     const cardType = number(cardNumber).card?.type;
-    if (cardType === 'american-express') {
+    if (cardType === "american-express") {
       const validation = cvv(value, 4);
-      setCvvError(validation.isValid ? '' : 'Invalid CVV (must be 4 digits)');
+      setCvvError(validation.isValid ? "" : "Invalid CVV (must be 4 digits)");
     } else {
       const validation = cvv(value);
-      setCvvError(validation.isValid ? '' : 'Invalid CVV (must be 3 digits)');
+      setCvvError(validation.isValid ? "" : "Invalid CVV (must be 3 digits)");
     }
   };
 
-
   ////// */
 
-  const txtCountryRef = useRef<HTMLDivElement>(null)
-  const helperText = '*Required'
+  const txtCountryRef = useRef<HTMLDivElement>(null);
+  const helperText = "*Required";
 
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-
     if (window && window.parent) {
       //console.log('window.parent ==>', window.parent)
       const dimesions = JSON.stringify({
         height: Math.max(
-          window.document.body.scrollHeight, window.document.documentElement.scrollHeight,
-          window.document.body.offsetHeight, window.document.documentElement.offsetHeight,
-          window.document.body.clientHeight, window.document.documentElement.clientHeight
+          window.document.body.scrollHeight,
+          window.document.documentElement.scrollHeight,
+          window.document.body.offsetHeight,
+          window.document.documentElement.offsetHeight,
+          window.document.body.clientHeight,
+          window.document.documentElement.clientHeight
         ),
         width: Math.max(
-          window.document.body.scrollWidth, window.document.documentElement.scrollWidth,
-          window.document.body.offsetWidth, window.document.documentElement.offsetWidth,
-          window.document.body.clientWidth, window.document.documentElement.clientWidth
-        )
-      })
+          window.document.body.scrollWidth,
+          window.document.documentElement.scrollWidth,
+          window.document.body.offsetWidth,
+          window.document.documentElement.offsetWidth,
+          window.document.body.clientWidth,
+          window.document.documentElement.clientWidth
+        ),
+      });
       //console.log('postMessage ==>', dimesions)
-      window.parent.postMessage(dimesions, '*')
+      window.parent.postMessage(dimesions, "*");
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   const onCountryChange = (ev: SyntheticEvent) => {
     const txt = txtCountryRef.current;
 
     if (txt) {
-      console.log('Text Value==>', txt)
+      console.log("Text Value==>", txt);
     }
 
-    console.log('eveent ==>', ev)
-  }
+    console.log("eveent ==>", ev);
+  };
 
   const updateTermsAndCondition = (errorsResult: ValidationErrors) => {
-    const addressError =
-      Object.keys(errorsResult).length
+    const addressError = Object.keys(errorsResult).length;
 
-    console.log('cardNumberError ==>', cardNumberError, 'expiryYearError ==>', (expiryYearError != ''), 'expiryMonthError ==>', (expiryMonthError != ''),
-      'nameError ==>', nameError, 'cvvError ==>', (cvvError != ''))
+    console.log(
+      "cardNumberError ==>",
+      cardNumberError,
+      "expiryYearError ==>",
+      expiryYearError != "",
+      "expiryMonthError ==>",
+      expiryMonthError != "",
+      "nameError ==>",
+      nameError,
+      "cvvError ==>",
+      cvvError != ""
+    );
 
-    const cardError = cardNumberError || (expiryYearError != '') || (expiryMonthError != '') || nameError || (cvvError != '')
+    const cardError =
+      cardNumberError ||
+      expiryYearError != "" ||
+      expiryMonthError != "" ||
+      nameError ||
+      cvvError != "";
 
-    console.log('cardError ==>', cardError, ' errorsResult ==>', errorsResult)
+    console.log("cardError ==>", cardError, " errorsResult ==>", errorsResult);
 
-    if ((addressError > 0) || cardError) {
-      setTermsField(true)
+    if (addressError > 0 || cardError) {
+      setTermsField(true);
+    } else {
+      setTermsField(false);
     }
-    else {
-      setTermsField(false)
-    }
-  }
+  };
 
   const onValidate = (values: PaymentWidgetInterface): ValidationErrors => {
-
-
     //console.log('onValidate values ==>', values)
 
-    const billingAddressLine1Error = addressLine1Validation(values.billingAddressLine1)
+    const billingAddressLine1Error = addressLine1Validation(
+      values.billingAddressLine1
+    );
 
-    const billingAddressLine2Error = addressLine2Validation(values.billingAddressLine2)
+    const billingAddressLine2Error = addressLine2Validation(
+      values.billingAddressLine2
+    );
 
-    const billingCountryError = countryValidation(values.billingCountry)
+    const billingCountryError = countryValidation(values.billingCountry);
 
-    const billingZipCodeError = zipValidation(values.billingZipCode, values.billingCountry)
+    const billingZipCodeError = zipValidation(
+      values.billingZipCode,
+      values.billingCountry
+    );
 
-    const billingStateError = stateValidation(values.billingState, values.billingCountry)
+    const billingStateError = stateValidation(
+      values.billingState,
+      values.billingCountry
+    );
 
-    const billingCityError = cityValidation(values.billingCity)
+    const billingCityError = cityValidation(values.billingCity);
 
     //console.log('billingZipCodeError ==>', billingZipCodeError)
 
     let errorsResult: ValidationErrors = {
-      ...(billingAddressLine1Error && { billingAddressLine1: billingAddressLine1Error }),
-      ...(billingAddressLine2Error && { billingAddressLine2: billingAddressLine2Error }),
+      ...(billingAddressLine1Error && {
+        billingAddressLine1: billingAddressLine1Error,
+      }),
+      ...(billingAddressLine2Error && {
+        billingAddressLine2: billingAddressLine2Error,
+      }),
       ...(billingCountryError && { billingCountry: billingCountryError }),
       ...(billingZipCodeError && { billingZipCode: billingZipCodeError }),
       ...(billingStateError && { billingState: billingStateError }),
       ...(billingCityError && { billingCity: billingCityError }),
-    }
-
+    };
 
     //console.log('errorsResult ==>', errorsResult)
 
-    updateTermsAndCondition(errorsResult)
+    updateTermsAndCondition(errorsResult);
 
-    return errorsResult
-  }
+    return errorsResult;
+  };
 
-  const getDisplayText = (props: FormRenderProps<PaymentWidgetInterface, Partial<PaymentWidgetInterface>>) => {
-    return (props.values.billingCountry === 'US' || props.values.billingCountry === 'CA') ? helperText : ''
-  }
+  const getDisplayText = (
+    props: FormRenderProps<
+      PaymentWidgetInterface,
+      Partial<PaymentWidgetInterface>
+    >
+  ) => {
+    return props.values.billingCountry === "US" ||
+      props.values.billingCountry === "CA"
+      ? helperText
+      : "";
+  };
 
   return (
-    <div >
+    <div>
       <div className="container">
         <Form<PaymentWidgetInterface>
           onSubmit={() => {
@@ -273,10 +323,10 @@ const PaymentWidget = () => {
           }}
           validate={onValidate}
           initialValues={{
-            ...PaymentWidgetFormFields
+            ...PaymentWidgetFormFields,
           }}
         >
-          {props => {
+          {(props) => {
             return (
               <form id="">
                 <div className="bold-change info-header mbot">
@@ -327,9 +377,12 @@ const PaymentWidget = () => {
                         marginTop: "4px",
                       },
                     }}
-                    inputProps={{ style: { fontWeight: "bold", width: "640px" } }}
+                    inputProps={{
+                      style: { fontWeight: "bold", width: "640px" },
+                    }}
                     helperText={nameError ? "Invalid Name" : "*Required"}
-                    error={nameError} />
+                    error={nameError}
+                  />
                 </div>
                 <div className="mbot">
                   <TextField
@@ -348,12 +401,20 @@ const PaymentWidget = () => {
                         marginTop: "4px",
                       },
                     }}
-                    inputProps={{ style: { fontWeight: "bold", width: "640px" } }}
-                    helperText={cardNumberError ? "Invalid Card Number" : "*Required"}
+                    inputProps={{
+                      style: { fontWeight: "bold", width: "640px" },
+                    }}
+                    helperText={
+                      cardNumberError ? "Invalid Card Number" : "*Required"
+                    }
                     error={cardNumberError}
                   />
                 </div>
-                {cardType && <p className="bold-change">CARD TYPE: {cardType.toUpperCase()}</p>}
+                {cardType && (
+                  <p className="bold-change">
+                    CARD TYPE: {cardType.toUpperCase()}
+                  </p>
+                )}
                 <div className="month-year">
                   <TextField
                     id="filled-basic"
@@ -374,7 +435,6 @@ const PaymentWidget = () => {
                     }}
                     error={Boolean(expiryMonthError)}
                     helperText={expiryMonthError}
-
                   />
 
                   <div className="mbot">
@@ -404,7 +464,7 @@ const PaymentWidget = () => {
                   <TextField
                     id="filled-basic"
                     label="CVV"
-                    type='password'
+                    type="password"
                     value={cvvValue}
                     onChange={handleCvvChange}
                     variant="filled"
@@ -428,70 +488,74 @@ const PaymentWidget = () => {
                   <Field name="billingCountry">
                     {({ input, meta }) => {
                       const { error, touched, submitError } = meta;
-                      const isError = (error && touched) ? true : false
+                      const isError = error && touched ? true : false;
                       //console.log('billingCountry isError ==>', isError)
-                      return (<Autocomplete
-                        id="ddlCountry"
-                        options={countries}
-                        disableClearable
-                        freeSolo
-                        selectOnFocus
-                        clearOnBlur
-                        // value={country}
-                        onChange={(event, newValue) => {
-                          //console.log('On country change', newValue)
-                          let option1 = (newValue as Option);
+                      return (
+                        <Autocomplete
+                          id="ddlCountry"
+                          options={countries}
+                          disableClearable
+                          freeSolo
+                          selectOnFocus
+                          clearOnBlur
+                          // value={country}
+                          onChange={(event, newValue) => {
+                            //console.log('On country change', newValue)
+                            let option1 = newValue as Option;
 
-                          /* if (txtState.current) {
+                            /* if (txtState.current) {
                              console.log('txtState ==>', txtState.current)
                              //txtState.current.nodeValue = '';
                            }*/
-                          //console.log('state Before ==>', state)
+                            //console.log('state Before ==>', state)
 
-                          if (option1) {
-                            setCountry(option1.value)
-                            setState('')
+                            if (option1) {
+                              setCountry(option1.value);
+                              setState("");
 
-                            //props.values.billingState = '';
+                              //props.values.billingState = '';
 
-                            // console.log('after Before ==>', state)
-                            if (input.onChange) {
-                              input.onChange(option1.value);
+                              // console.log('after Before ==>', state)
+                              if (input.onChange) {
+                                input.onChange(option1.value);
+                              }
                             }
-                          }
-                        }}
-                        renderInput={(params) =>
-                          <div ref={params.InputProps.ref}>
-                            <TextField {...params} label="Country"
-                              helperText={isError ? error : helperText}
-                              error={isError}
-                              type="text"
-                              InputProps={{
-                                style: { fontWeight: "bold", width: "660px" },
-                                ...params.InputProps,
-                                ...input
-                              }}
-                              InputLabelProps={{
-                                style: {
-                                  fontWeight: 700,
-                                  fontSize: "13px",
-                                  marginTop: "4px",
-                                },
-                              }}
-                              className="bold-change"
-                              variant="filled"
-                            />
-                          </div>}
-                      />)
-                    }
-                    }
+                          }}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <TextField
+                                {...params}
+                                label="Country"
+                                helperText={isError ? error : helperText}
+                                error={isError}
+                                type="text"
+                                InputProps={{
+                                  style: { fontWeight: "bold", width: "660px" },
+                                  ...params.InputProps,
+                                  ...input,
+                                }}
+                                InputLabelProps={{
+                                  style: {
+                                    fontWeight: 700,
+                                    fontSize: "13px",
+                                    marginTop: "4px",
+                                  },
+                                }}
+                                className="bold-change"
+                                variant="filled"
+                              />
+                            </div>
+                          )}
+                        />
+                      );
+                    }}
                   </Field>
                 </div>
                 <div className="mbot">
                   <Field name="billingAddressLine1">
                     {({ input, meta }) => {
                       const { error, touched, submitError } = meta;
-                      const isError = (error && touched) ? true : false
+                      const isError = error && touched ? true : false;
                       // console.log('billingAddressLine1 isError ==>', isError)
                       return (
                         <TextField
@@ -510,20 +574,22 @@ const PaymentWidget = () => {
                           }}
                           inputProps={{
                             style: { fontWeight: "bold", width: "640px" },
-                            ...input
+                            ...input,
                           }}
-                          helperText={isError ? error || submitError : helperText}
+                          helperText={
+                            isError ? error || submitError : helperText
+                          }
                           error={isError}
-                        />)
-                    }
-                    }
+                        />
+                      );
+                    }}
                   </Field>
                 </div>
                 <div className="mbot">
                   <Field name="billingAddressLine2">
                     {({ input, meta }) => {
                       const { error, submitError, touched } = meta;
-                      const isError = (error && touched) ? true : false
+                      const isError = error && touched ? true : false;
                       //console.log('billingAddressLine2 isError ==>', isError)
                       return (
                         <TextField
@@ -533,7 +599,7 @@ const PaymentWidget = () => {
                           className="bold-change"
                           value={address2}
                           onChange={(e) => setAddress2(e.target.value)}
-                          style={{ marginBottom: '5px' }}
+                          style={{ marginBottom: "5px" }}
                           InputLabelProps={{
                             style: {
                               fontWeight: 700,
@@ -543,13 +609,13 @@ const PaymentWidget = () => {
                           }}
                           inputProps={{
                             style: { fontWeight: "bold", width: "640px" },
-                            ...input
+                            ...input,
                           }}
-                          helperText={isError ? error : ''}
+                          helperText={isError ? error : ""}
                           error={isError}
-                        />)
-                    }
-                    }
+                        />
+                      );
+                    }}
                   </Field>
                 </div>
 
@@ -557,7 +623,7 @@ const PaymentWidget = () => {
                   <Field name="billingCity">
                     {({ input, meta }) => {
                       const { error, submitError, touched } = meta;
-                      const isError = (error && touched) ? true : false
+                      const isError = error && touched ? true : false;
                       //console.log('billingAddressLine2 isError ==>', isError)
                       return (
                         <TextField
@@ -576,78 +642,87 @@ const PaymentWidget = () => {
                           }}
                           inputProps={{
                             style: { fontWeight: "bold", width: "640px" },
-                            ...input
+                            ...input,
                           }}
                           helperText={isError ? error : helperText}
                           error={isError}
-                        />)
-                    }
-                    }
+                        />
+                      );
+                    }}
                   </Field>
                 </div>
                 <div className="mbot">
                   <Field name="billingState">
                     {({ input, meta }) => {
                       const { error, touched, submitError, modified } = meta;
-                      const isError = (error && (touched)) ? true : false
+                      const isError = error && touched ? true : false;
                       //console.log('billingState  ==>', props.values.billingState, 'state ==>', state)
-                      const displayText = isError ? error : getDisplayText(props)
-                      return (<Autocomplete
-                        id="ddlState"
-                        options={getStateByCountry(props.values.billingCountry)}
-                        disableClearable
-                        freeSolo
-                        selectOnFocus
-                        //clearOnBlur
-                        // value={country}
-                        style={{ marginBottom: "20px" }}
-                        onChange={(event, newValue) => {
-                          //console.log('On country change', newValue)
-                          let option1 = (newValue as Option);
-                          //console.log('OutSide State')
-                          if (option1) {
-                            //console.log('Inside State')
-                            setState(option1.label)
-                            if (input.onChange) {
-                              input.onChange(option1.label);
+                      const displayText = isError
+                        ? error
+                        : getDisplayText(props);
+                      return (
+                        <Autocomplete
+                          id="ddlState"
+                          options={getStateByCountry(
+                            props.values.billingCountry
+                          )}
+                          disableClearable
+                          freeSolo
+                          selectOnFocus
+                          //clearOnBlur
+                          // value={country}
+                          style={{ marginBottom: "20px" }}
+                          onChange={(event, newValue) => {
+                            //console.log('On country change', newValue)
+                            let option1 = newValue as Option;
+                            //console.log('OutSide State')
+                            if (option1) {
+                              //console.log('Inside State')
+                              setState(option1.label);
+                              if (input.onChange) {
+                                input.onChange(option1.label);
+                              }
                             }
-                          }
-                        }}
-                        renderInput={(params) =>
-                          <div ref={params.InputProps.ref}>
-                            <TextField {...params} label="State/Province"
-                              helperText={displayText}
-                              error={isError}
-                              type="text"
-                              InputProps={{
-                                style: { fontWeight: "bold", width: "660px" },
-                                ...params.InputProps,
-                                ...input
-                              }}
-                              InputLabelProps={{
-                                style: {
-                                  fontWeight: 700,
-                                  fontSize: "13px",
-                                  marginTop: "4px",
-                                },
-                              }}
-                              className="bold-change"
-                              variant="filled"
-
-                            />
-                          </div>}
-                      />)
-                    }
-                    }
+                          }}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <TextField
+                                {...params}
+                                label="State/Province"
+                                helperText={displayText}
+                                error={isError}
+                                type="text"
+                                InputProps={{
+                                  style: { fontWeight: "bold", width: "660px" },
+                                  ...params.InputProps,
+                                  ...input,
+                                }}
+                                InputLabelProps={{
+                                  style: {
+                                    fontWeight: 700,
+                                    fontSize: "13px",
+                                    marginTop: "4px",
+                                  },
+                                }}
+                                className="bold-change"
+                                variant="filled"
+                              />
+                            </div>
+                          )}
+                        />
+                      );
+                    }}
                   </Field>
                 </div>
                 <div className="mbot">
                   <Field name="billingZipCode">
                     {({ input, meta }) => {
                       const { error, submitError, touched } = meta;
-                      const isError = (error && touched) ? true : false
+                      const isError = error && touched ? true : false;
                       //console.log('zipCode isError ==>', isError, ' country==>', country)
-                      const displayText = isError ? error : getDisplayText(props)
+                      const displayText = isError
+                        ? error
+                        : getDisplayText(props);
                       return (
                         <TextField
                           id="filled-basic"
@@ -665,19 +740,18 @@ const PaymentWidget = () => {
                           }}
                           inputProps={{
                             style: { fontWeight: "bold", width: "640px" },
-                            ...input
+                            ...input,
                           }}
                           helperText={displayText}
                           error={isError}
-                        />)
-                    }
-                    }
+                        />
+                      );
+                    }}
                   </Field>
                 </div>
               </form>
-            )
-          }
-          }
+            );
+          }}
         </Form>
         <div className="mbot terms">
           <div className="">
@@ -691,7 +765,11 @@ const PaymentWidget = () => {
                 id="termsAndConditions"
               />
             </span>
-            <span className="" id="terms-and-conditions" data-testid="typography">
+            <span
+              className=""
+              id="terms-and-conditions"
+              data-testid="typography"
+            >
               I agree to the&nbsp;
               <a aria-label="Terms &amp; Conditions">
                 <span>Terms &amp; Conditions</span>
@@ -741,23 +819,23 @@ const PaymentWidget = () => {
         </div>
       </div>
 
-
       <div className="mbot">
         {name &&
-          cardNumber &&
-          expiryMonth &&
-          expiryYear &&
-          cvvValue &&
-          country &&
-          address &&
-          state &&
-          zip ? (
-          <button
-            className="sc-bxivhb gSIuog sc-jTzLTM cLoZFB"
-            data-testid="next-button"
-          >
-            <span>Complete Purchase</span>
-          </button>
+        cardNumber &&
+        expiryMonth &&
+        expiryYear &&
+        cvvValue &&
+        country &&
+        address &&
+        state &&
+        zip ? (
+          // <button
+          //   className="sc-bxivhb gSIuog sc-jTzLTM cLoZFB"
+          //   data-testid="next-button"
+          // >
+          //   <span>Complete Purchase</span>
+          // </button>
+          <button className="payment-button m-bot">Complete Purchase</button>
         ) : (
           <div></div>
         )}
@@ -767,4 +845,3 @@ const PaymentWidget = () => {
 };
 
 export default PaymentWidget;
-
